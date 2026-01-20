@@ -1,0 +1,14 @@
+{
+  "categories": [
+    { "id": 1, "name": "Home Services & Repairs" },
+    { "id": 2, "name": "Cleaning & Sanitation" },
+    { "id": 3, "name": "Beauty & Personal Care" },
+    { "id": 4, "name": "Health & Wellness" },
+    { "id": 5, "name": "Event & Photography" },
+    { "id": 6, "name": "Education & Tutoring" },
+    { "id": 7, "name": "Business & Professional Services" },
+    { "id": 8, "name": "Appliance & Electronics" },
+    { "id": 9, "name": "Automotive Services" },
+    { "id": 10, "name": "Logistics & Moving" }
+  ]
+}

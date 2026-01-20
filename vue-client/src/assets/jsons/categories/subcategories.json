@@ -1,0 +1,56 @@
+{
+  "subcategories": [
+    { "id": 101, "category_id": 1, "name": "Appliance Repair (AC, Refrigerator, Washing Machine)" },
+    { "id": 102, "category_id": 1, "name": "Plumbing" },
+    { "id": 103, "category_id": 1, "name": "Electrical Work" },
+    { "id": 104, "category_id": 1, "name": "Carpentry & Furniture Repair" },
+    { "id": 105, "category_id": 1, "name": "Painting & Renovation" },
+    { "id": 106, "category_id": 1, "name": "Pest Control" },
+    { "id": 107, "category_id": 1, "name": "Masonry & Civil Work" },
+    { "id": 108, "category_id": 1, "name": "CCTV & Security Installation" },
+
+    { "id": 201, "category_id": 2, "name": "Deep/Spring Cleaning" },
+    { "id": 202, "category_id": 2, "name": "Regular House Cleaning" },
+    { "id": 203, "category_id": 2, "name": "Office Cleaning" },
+    { "id": 204, "category_id": 2, "name": "Carpet & Sofa Cleaning" },
+    { "id": 205, "category_id": 2, "name": "Post-Construction Cleanup" },
+    { "id": 206, "category_id": 2, "name": "Water Tank Cleaning" },
+    { "id": 207, "category_id": 2, "name": "Toilet/Septic Tank Cleaning" },
+
+    { "id": 301, "category_id": 3, "name": "At-Home Salon (Facial, Waxing, Haircut, Makeup)" },
+    { "id": 302, "category_id": 3, "name": "Massage Therapy" },
+    { "id": 303, "category_id": 3, "name": "Barber at Home" },
+    { "id": 304, "category_id": 3, "name": "Manicure & Pedicure" },
+
+    { "id": 401, "category_id": 4, "name": "Physiotherapy at Home" },
+    { "id": 402, "category_id": 4, "name": "Nursing & Elderly Care" },
+    { "id": 403, "category_id": 4, "name": "Fitness Trainer at Home" },
+
+    { "id": 501, "category_id": 5, "name": "Event Photographer" },
+    { "id": 502, "category_id": 5, "name": "Videographer & Cinematography" },
+    { "id": 503, "category_id": 5, "name": "Wedding Photography" },
+    { "id": 504, "category_id": 5, "name": "Drone Photography" },
+
+    { "id": 601, "category_id": 6, "name": "Academic Tutoring" },
+    { "id": 602, "category_id": 6, "name": "Language Tutoring" },
+    { "id": 603, "category_id": 6, "name": "Music Lessons (Guitar, Piano)" },
+    { "id": 604, "category_id": 6, "name": "Arts & Crafts Coaching" },
+
+    { "id": 701, "category_id": 7, "name": "Legal Consultancy" },
+    { "id": 702, "category_id": 7, "name": "Accounting & Tax Filing" },
+    { "id": 703, "category_id": 7, "name": "Digital Marketing" },
+    { "id": 704, "category_id": 7, "name": "Graphic & Web Design" },
+
+    { "id": 801, "category_id": 8, "name": "Appliance Sales" },
+    { "id": 802, "category_id": 8, "name": "Installation (AC, TV, Geyser)" },
+    { "id": 803, "category_id": 8, "name": "Maintenance Contracts" },
+
+    { "id": 901, "category_id": 9, "name": "Car/Bike Washing at Home" },
+    { "id": 902, "category_id": 9, "name": "Minor Repair & Maintenance" },
+    { "id": 903, "category_id": 9, "name": "On-Demand Mechanic" },
+
+    { "id": 1001, "category_id": 10, "name": "Parcel/Document Delivery" },
+    { "id": 1002, "category_id": 10, "name": "Bike/Truck Rental" },
+    { "id": 1003, "category_id": 10, "name": "Packers & Movers" }
+  ]
+}
