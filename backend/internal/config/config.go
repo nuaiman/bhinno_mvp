@@ -19,7 +19,7 @@ type Config struct {
 	JWTKey             string `env:"JWT_KEY"`
 	AccessTokenTTL     int    `env:"ACCESS_TOKEN_TTL_MIN" env-default:"15"`
 	RefreshTokenTTL    int    `env:"REFRESH_TOKEN_TTL_DAYS" env-default:"30"`
-	SuperAdminPhone    string `env:"SUPERADMIN_PHONE"`
+	SuperAdminEmail    string `env:"SUPERADMIN_EMAIL"`
 	SuperAdminPassword string `env:"SUPERADMIN_PASSWORD"`
 }
 
@@ -42,8 +42,8 @@ func LoadConfig() *Config {
 		log.Fatalf("Cannot read config from %s: %v", envPath, err)
 	}
 
-	if cfg.JWTKey == "" || cfg.SuperAdminPhone == "" || cfg.SuperAdminPassword == "" || cfg.DB_URL == "" {
-		log.Fatal("JWT_KEY, SUPERADMIN_PHONE, SUPERADMIN_PASSWORD, and DB_URL must be set")
+	if cfg.JWTKey == "" || cfg.SuperAdminEmail == "" || cfg.SuperAdminPassword == "" || cfg.DB_URL == "" {
+		log.Fatal("JWT_KEY, SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD, and DB_URL must be set")
 	}
 
 	return &cfg

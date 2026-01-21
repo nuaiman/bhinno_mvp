@@ -9,11 +9,105 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"cloud.google.com/go/auth/credentials/idtoken"
 )
 
-func authHandler(w http.ResponseWriter, r *http.Request) {
+func googleAuthHandler(w http.ResponseWriter, r *http.Request) {
+	type GoogleAuthRequest struct {
+		IDToken     string `json:"id_token"`
+		AccessToken string `json:"access_token"`
+	}
+
+	var req GoogleAuthRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.JSON(w, http.StatusBadRequest, false, "invalid request body", nil)
+		return
+	}
+
+	if req.IDToken == "" || req.AccessToken == "" {
+		utils.JSON(w, http.StatusBadRequest, false, "id_token and access_token required", nil)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	payload, err := idtoken.Validate(ctx, req.IDToken, "YOUR_GOOGLE_CLIENT_ID_HERE")
+	if err != nil {
+		utils.JSON(w, http.StatusUnauthorized, false, "invalid Google ID token", nil)
+		return
+	}
+
+	if _, err := utils.VerifyGoogleOAuthAccessToken(req.AccessToken); err != nil {
+		utils.JSON(w, http.StatusUnauthorized, false, "invalid Google access token", nil)
+		return
+	}
+
+	email, _ := payload.Claims["email"].(string)
+	name, _ := payload.Claims["name"].(string)
+	picture, _ := payload.Claims["picture"].(string)
+	googleID, _ := payload.Claims["sub"].(string)
+
+	user, err := models.GetUserByGoogleID(ctx, googleID)
+	if err != nil {
+		user, err = models.GetUserByEmail(ctx, email)
+		if err != nil {
+			user = &models.User{
+				Email:    email,
+				Name:     name,
+				Avatar:   picture,
+				GoogleID: googleID,
+				Verified: true,
+			}
+			if err := models.CreateUserWithGoogle(ctx, user); err != nil {
+				utils.JSON(w, http.StatusInternalServerError, false, "cannot create user", nil)
+				return
+			}
+			user, err = models.GetUserByEmail(ctx, email)
+			if err != nil {
+				utils.JSON(w, http.StatusInternalServerError, false, "cannot fetch user", nil)
+				return
+			}
+		} else {
+			user.GoogleID = googleID
+			user.Verified = true
+			if user.Avatar == "" {
+				user.Avatar = picture
+			}
+			if err := models.UpdateUser(ctx, user); err != nil {
+				utils.JSON(w, http.StatusInternalServerError, false, "cannot link Google account", nil)
+				return
+			}
+		}
+	}
+
+	refreshToken, err := utils.GenerateRefreshToken()
+	if err != nil {
+		utils.JSON(w, http.StatusInternalServerError, false, "cannot generate refresh token", nil)
+		return
+	}
+	if err := models.UpdateUserRefreshToken(ctx, user.ID, refreshToken); err != nil {
+		utils.JSON(w, http.StatusInternalServerError, false, "cannot save refresh token", nil)
+		return
+	}
+
+	accessToken, err := utils.GenerateJWT(user.ID, user.Role)
+	if err != nil {
+		utils.JSON(w, http.StatusInternalServerError, false, "cannot generate access token", nil)
+		return
+	}
+
+	utils.JSON(w, http.StatusOK, true, "login successful", map[string]any{
+		"user":          user,
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
+}
+
+func emailAuthHandler(w http.ResponseWriter, r *http.Request) {
 	type AuthRequest struct {
-		Phone    string `json:"phone"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
@@ -23,12 +117,35 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Email == "" || req.Password == "" {
+		utils.JSON(w, http.StatusBadRequest, false, "email and password required", nil)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	user, err := models.GetUserByPhone(ctx, req.Phone)
-	if err != nil || !utils.CheckHashAndPassword(req.Password, user.Password) {
-		utils.JSON(w, http.StatusUnauthorized, false, "invalid phone or password", nil)
+	user, err := models.GetUserByEmail(ctx, req.Email)
+	if err != nil {
+		hashedPassword := utils.HashPassword(req.Password)
+		user = &models.User{
+			Email:    req.Email,
+			Password: hashedPassword,
+		}
+		if err := models.CreateUserWithEmail(ctx, user); err != nil {
+			utils.JSON(w, http.StatusInternalServerError, false, "cannot create user", nil)
+			return
+		}
+
+		user, err = models.GetUserByEmail(ctx, req.Email)
+		if err != nil {
+			utils.JSON(w, http.StatusInternalServerError, false, "cannot fetch user", nil)
+			return
+		}
+	}
+
+	if !utils.CheckHashAndPassword(req.Password, user.Password) {
+		utils.JSON(w, http.StatusUnauthorized, false, "invalid credentials", nil)
 		return
 	}
 
@@ -43,7 +160,7 @@ func authHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := utils.GenerateJWT(user.ID, user.Phone, user.Role)
+	accessToken, err := utils.GenerateJWT(user.ID, user.Role)
 	if err != nil {
 		utils.JSON(w, http.StatusInternalServerError, false, "cannot generate access token", nil)
 		return
@@ -87,7 +204,7 @@ func refreshSessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := utils.GenerateJWT(user.ID, user.Phone, user.Role)
+	accessToken, err := utils.GenerateJWT(user.ID, user.Role)
 	if err != nil {
 		utils.JSON(w, http.StatusInternalServerError, false, "cannot generate access token", nil)
 		return

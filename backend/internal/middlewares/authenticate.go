@@ -9,7 +9,6 @@ import (
 
 const (
 	CtxUserID string = "userID"
-	CtxPhone  string = "phone"
 	CtxRole   string = "role"
 )
 
@@ -24,7 +23,7 @@ func Authenticate(next http.HandlerFunc) http.HandlerFunc {
 
 		accessToken := strings.TrimSpace(authHeader[7:])
 
-		userID, phone, role, err := utils.VerifyJWT(accessToken)
+		userID, role, err := utils.VerifyJWT(accessToken)
 		if err != nil {
 			utils.JSON(w, http.StatusUnauthorized, false, "Unauthorized", nil)
 			return
@@ -32,7 +31,6 @@ func Authenticate(next http.HandlerFunc) http.HandlerFunc {
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, CtxUserID, userID)
-		ctx = context.WithValue(ctx, CtxPhone, phone)
 		ctx = context.WithValue(ctx, CtxRole, role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))

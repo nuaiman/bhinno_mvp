@@ -24,7 +24,7 @@ func main() {
 	defer db.Close()
 
 	superadminPasswordHash := utils.HashPassword(cfg.SuperAdminPassword)
-	models.EnsureSuperAdmin(cfg.SuperAdminPhone, superadminPasswordHash)
+	models.EnsureSuperAdmin(cfg.SuperAdminEmail, superadminPasswordHash)
 
 	utils.InitJWT(cfg.JWTKey, cfg.AccessTokenTTL)
 	utils.InitRefreshTokenTTL(cfg.RefreshTokenTTL)

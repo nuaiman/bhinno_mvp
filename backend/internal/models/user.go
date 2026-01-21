@@ -8,29 +8,30 @@ import (
 )
 
 type User struct {
-	ID               int64     `json:"id"`
-	Name             string    `json:"name,omitempty"`
-	Phone            string    `json:"phone,omitempty"`
-	Password         string    `json:"-"` // hide password in JSON
-	RefreshToken     string    `json:"-"`
-	RefreshTokenAt   time.Time `json:"-"`
-	Role             string    `json:"role,omitempty"`
-	Status           string    `json:"status,omitempty"`
-	Verified         bool      `json:"verified,omitempty"`
-	Email            string    `json:"email,omitempty"`
-	Avatar           string    `json:"avatar,omitempty"`
-	Bio              string    `json:"bio,omitempty"`
-	SocialMedia1Name string    `json:"social_media_1_name,omitempty"`
-	SocialMedia1URL  string    `json:"social_media_1_url,omitempty"`
-	SocialMedia2Name string    `json:"social_media_2_name,omitempty"`
-	SocialMedia2URL  string    `json:"social_media_2_url,omitempty"`
-	RatingAvg        float64   `json:"rating_avg,omitempty"`
-	RatingCount      int       `json:"rating_count,omitempty"`
-	CreatedAt        time.Time `json:"created_at,omitempty"`
+	ID                int64      `json:"id"`
+	Name              string     `json:"name,omitempty"`
+	Phone             string     `json:"phone,omitempty"`
+	Email             string     `json:"email,omitempty"`
+	Password          string     `json:"-"`
+	Verified          bool       `json:"verified,omitempty"`
+	Role              string     `json:"role,omitempty"`
+	Status            string     `json:"status,omitempty"`
+	Avatar            string     `json:"avatar,omitempty"`
+	Bio               string     `json:"bio,omitempty"`
+	ResetToken        string     `json:"-"`
+	ResetTokenExpiry  *time.Time `json:"-"`
+	GoogleID          string     `json:"-"`
+	GoogleIDToken     string     `json:"-"`
+	GoogleAccessToken string     `json:"-"`
+	FCMToken          string     `json:"-"`
+	RefreshToken      string     `json:"-"`
+	RefreshTokenAt    *time.Time `json:"-"`
+	RatingAvg         float64    `json:"rating_avg,omitempty"`
+	RatingCount       int        `json:"rating_count,omitempty"`
+	CreatedAt         time.Time  `json:"created_at,omitzero"`
 }
 
-// EnsureSuperAdmin creates or updates the superadmin user
-func EnsureSuperAdmin(phone, hashedPassword string) {
+func EnsureSuperAdmin(email, hashedPassword string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -38,9 +39,9 @@ func EnsureSuperAdmin(phone, hashedPassword string) {
 	err := db.Pool.QueryRow(ctx, `SELECT id FROM users WHERE role='superadmin'`).Scan(&id)
 	if err != nil {
 		_, err := db.Pool.Exec(ctx, `
-			INSERT INTO users (phone, password, role)
+			INSERT INTO users (email, password, role)
 			VALUES ($1, $2, 'superadmin')
-		`, phone, hashedPassword)
+		`, email, hashedPassword)
 		if err != nil {
 			log.Fatalf("Failed to create superadmin: %v", err)
 		}
@@ -50,122 +51,162 @@ func EnsureSuperAdmin(phone, hashedPassword string) {
 
 	_, err = db.Pool.Exec(ctx, `
 		UPDATE users
-		SET phone=$1, password=$2
+		SET email=$1, password=$2
 		WHERE id=$3
-	`, phone, hashedPassword, id)
+	`, email, hashedPassword, id)
 	if err != nil {
 		log.Fatalf("Failed to update superadmin: %v", err)
 	}
 	log.Println("Superadmin updated")
 }
 
-// Fetch user by ID
-func GetUserByID(ctx context.Context, userID int64) (*User, error) {
-	u := &User{}
-	err := db.Pool.QueryRow(ctx, `
-		SELECT 
-			id, phone, password, refresh_token, refresh_token_at, role, status, name, email, avatar, bio,
-			social_media_1_name, social_media_1_url, social_media_2_name, social_media_2_url,
-			rating_avg, rating_count, verified, created_at
-		FROM users
-		WHERE id=$1
-	`, userID).Scan(
-		&u.ID, &u.Phone, &u.Password, &u.RefreshToken, &u.RefreshTokenAt,
-		&u.Role, &u.Status, &u.Name, &u.Email, &u.Avatar, &u.Bio,
-		&u.SocialMedia1Name, &u.SocialMedia1URL, &u.SocialMedia2Name, &u.SocialMedia2URL,
-		&u.RatingAvg, &u.RatingCount, &u.Verified, &u.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
-
-// Fetch user by phone
-func GetUserByPhone(ctx context.Context, phone string) (*User, error) {
-	u := &User{}
-	err := db.Pool.QueryRow(ctx, `
-		SELECT 
-			id, phone, password, refresh_token, refresh_token_at, role, status, name, email, avatar, bio,
-			social_media_1_name, social_media_1_url, social_media_2_name, social_media_2_url,
-			rating_avg, rating_count, verified, created_at
-		FROM users
-		WHERE phone=$1
-	`, phone).Scan(
-		&u.ID, &u.Phone, &u.Password, &u.RefreshToken, &u.RefreshTokenAt,
-		&u.Role, &u.Status, &u.Name, &u.Email, &u.Avatar, &u.Bio,
-		&u.SocialMedia1Name, &u.SocialMedia1URL, &u.SocialMedia2Name, &u.SocialMedia2URL,
-		&u.RatingAvg, &u.RatingCount, &u.Verified, &u.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
-
-// Fetch user by Email
-func GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	u := &User{}
-	err := db.Pool.QueryRow(ctx, `
-		SELECT 
-			id, phone, password, refresh_token, refresh_token_at, role, status, name, email, avatar, bio,
-			social_media_1_name, social_media_1_url, social_media_2_name, social_media_2_url,
-			rating_avg, rating_count, verified, created_at
-		FROM users
-		WHERE email=$1
-	`, email).Scan(
-		&u.ID, &u.Phone, &u.Password, &u.RefreshToken, &u.RefreshTokenAt,
-		&u.Role, &u.Status, &u.Name, &u.Email, &u.Avatar, &u.Bio,
-		&u.SocialMedia1Name, &u.SocialMedia1URL, &u.SocialMedia2Name, &u.SocialMedia2URL,
-		&u.RatingAvg, &u.RatingCount, &u.Verified, &u.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
-
-// Fetch user by refresh token
-func GetUserByRefreshToken(ctx context.Context, token string) (*User, error) {
-	u := &User{}
-	err := db.Pool.QueryRow(ctx, `
-		SELECT 
-			id, phone, password, refresh_token, refresh_token_at, role, status, name, email, avatar, bio,
-			social_media_1_name, social_media_1_url, social_media_2_name, social_media_2_url,
-			rating_avg, rating_count, verified, created_at
-		FROM users
-		WHERE refresh_token=$1
-	`, token).Scan(
-		&u.ID, &u.Phone, &u.Password, &u.RefreshToken, &u.RefreshTokenAt,
-		&u.Role, &u.Status, &u.Name, &u.Email, &u.Avatar, &u.Bio,
-		&u.SocialMedia1Name, &u.SocialMedia1URL, &u.SocialMedia2Name, &u.SocialMedia2URL,
-		&u.RatingAvg, &u.RatingCount, &u.Verified, &u.CreatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
-}
-
-// Create a new user
-func CreateUser(ctx context.Context, u *User) error {
+func CreateUserWithGoogle(ctx context.Context, u *User) error {
 	_, err := db.Pool.Exec(ctx, `
-		INSERT INTO users (
-			phone, password, name, email, avatar, bio, social_media_1_name, social_media_1_url,
-			social_media_2_name, social_media_2_url
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-	`, u.Phone, u.Password, u.Name, u.Email, u.Avatar, u.Bio, u.SocialMedia1Name, u.SocialMedia1URL,
-		u.SocialMedia2Name, u.SocialMedia2URL)
+		INSERT INTO users (email, google_id, name, avatar, verified)
+		VALUES ($1, $2, $3, $4, $5)
+	`, u.Email, u.GoogleID, u.Name, u.Avatar, u.Verified)
 	return err
 }
 
-// Update refresh token
+func CreateUserWithEmail(ctx context.Context, u *User) error {
+	query := `
+		INSERT INTO users (email, password)
+		VALUES ($1, $2)
+	`
+	_, err := db.Pool.Exec(ctx, query, u.Email, u.Password)
+	return err
+}
+
+func GetUserByID(ctx context.Context, userID int64) (*User, error) {
+	u := &User{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT
+			id, verified, role, status, name, avatar, bio,
+			phone, email, password,
+			reset_token, reset_token_expiry,
+			google_id, google_id_token, google_access_token,
+			fcm_token, refresh_token, refresh_token_at,
+			rating_avg, rating_count, created_at
+		FROM users
+		WHERE id=$1
+	`, userID).Scan(
+		&u.ID, &u.Verified, &u.Role, &u.Status, &u.Name, &u.Avatar, &u.Bio,
+		&u.Phone, &u.Email, &u.Password,
+		&u.ResetToken, &u.ResetTokenExpiry,
+		&u.GoogleID, &u.GoogleIDToken, &u.GoogleAccessToken,
+		&u.FCMToken, &u.RefreshToken, &u.RefreshTokenAt,
+		&u.RatingAvg, &u.RatingCount, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func GetUserByGoogleID(ctx context.Context, googleID string) (*User, error) {
+	u := &User{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT
+			id, verified, role, status, name, avatar, bio, phone, email, password,
+			reset_token, reset_token_expiry, google_id, google_id_token, google_access_token,
+			fcm_token, refresh_token, refresh_token_at, rating_avg, rating_count, created_at
+		FROM users
+		WHERE google_id=$1
+	`, googleID).Scan(
+		&u.ID, &u.Verified, &u.Role, &u.Status, &u.Name, &u.Avatar, &u.Bio, &u.Phone, &u.Email, &u.Password,
+		&u.ResetToken, &u.ResetTokenExpiry, &u.GoogleID, &u.GoogleIDToken, &u.GoogleAccessToken,
+		&u.FCMToken, &u.RefreshToken, &u.RefreshTokenAt, &u.RatingAvg, &u.RatingCount, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func GetUserByPhone(ctx context.Context, phone string) (*User, error) {
+	u := &User{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT
+			id, verified, role, status, name, avatar, bio,
+			phone, email, password,
+			reset_token, reset_token_expiry,
+			google_id, google_id_token, google_access_token,
+			fcm_token, refresh_token, refresh_token_at,
+			rating_avg, rating_count, created_at
+		FROM users
+		WHERE phone=$1
+	`, phone).Scan(
+		&u.ID, &u.Verified, &u.Role, &u.Status, &u.Name, &u.Avatar, &u.Bio,
+		&u.Phone, &u.Email, &u.Password,
+		&u.ResetToken, &u.ResetTokenExpiry,
+		&u.GoogleID, &u.GoogleIDToken, &u.GoogleAccessToken,
+		&u.FCMToken, &u.RefreshToken, &u.RefreshTokenAt,
+		&u.RatingAvg, &u.RatingCount, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	u := &User{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT
+			id, verified, role, status, name, avatar, bio,
+			phone, email, password,
+			reset_token, reset_token_expiry,
+			google_id, google_id_token, google_access_token,
+			fcm_token, refresh_token, refresh_token_at,
+			rating_avg, rating_count, created_at
+		FROM users
+		WHERE email=$1
+	`, email).Scan(
+		&u.ID, &u.Verified, &u.Role, &u.Status, &u.Name, &u.Avatar, &u.Bio,
+		&u.Phone, &u.Email, &u.Password,
+		&u.ResetToken, &u.ResetTokenExpiry,
+		&u.GoogleID, &u.GoogleIDToken, &u.GoogleAccessToken,
+		&u.FCMToken, &u.RefreshToken, &u.RefreshTokenAt,
+		&u.RatingAvg, &u.RatingCount, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func GetUserByRefreshToken(ctx context.Context, token string) (*User, error) {
+	u := &User{}
+	err := db.Pool.QueryRow(ctx, `
+		SELECT
+			id, verified, role, status, name, avatar, bio,
+			phone, email, password,
+			reset_token, reset_token_expiry,
+			google_id, google_id_token, google_access_token,
+			fcm_token, refresh_token, refresh_token_at,
+			rating_avg, rating_count, created_at
+		FROM users
+		WHERE refresh_token=$1
+	`, token).Scan(
+		&u.ID, &u.Verified, &u.Role, &u.Status, &u.Name, &u.Avatar, &u.Bio,
+		&u.Phone, &u.Email, &u.Password,
+		&u.ResetToken, &u.ResetTokenExpiry,
+		&u.GoogleID, &u.GoogleIDToken, &u.GoogleAccessToken,
+		&u.FCMToken, &u.RefreshToken, &u.RefreshTokenAt,
+		&u.RatingAvg, &u.RatingCount, &u.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
 func UpdateUserRefreshToken(ctx context.Context, userID int64, token string) error {
 	var err error
 	if token == "" {
 		_, err = db.Pool.Exec(ctx, `
 			UPDATE users
-			SET refresh_token = '', refresh_token_at = NULL
+			SET refresh_token = NULL, refresh_token_at = NULL
 			WHERE id = $1
 		`, userID)
 	} else {
@@ -178,18 +219,13 @@ func UpdateUserRefreshToken(ctx context.Context, userID int64, token string) err
 	return err
 }
 
-// Update user info
 func UpdateUser(ctx context.Context, u *User) error {
 	_, err := db.Pool.Exec(ctx, `
 		UPDATE users
 		SET phone=$1, name=$2, email=$3, avatar=$4, bio=$5,
-		    social_media_1_name=$6, social_media_1_url=$7,
-		    social_media_2_name=$8, social_media_2_url=$9,
-		    verified=$10, status=$11
-		WHERE id=$12
+		    verified=$6, status=$7
+		WHERE id=$8
 	`, u.Phone, u.Name, u.Email, u.Avatar, u.Bio,
-		u.SocialMedia1Name, u.SocialMedia1URL,
-		u.SocialMedia2Name, u.SocialMedia2URL,
 		u.Verified, u.Status, u.ID)
 	return err
 }

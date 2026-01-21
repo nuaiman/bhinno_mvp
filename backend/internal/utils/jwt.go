@@ -24,19 +24,17 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID int64, phone, role string) (string, error) {
+func GenerateJWT(userID int64, role string) (string, error) {
 	if len(jwtKey) == 0 {
 		return "", errors.New("jwt key not initialized")
 	}
 
 	claims := &CustomClaims{
 		UserID: userID,
-		Phone:  phone,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Subject:   phone,
 		},
 	}
 
@@ -44,9 +42,9 @@ func GenerateJWT(userID int64, phone, role string) (string, error) {
 	return token.SignedString(jwtKey)
 }
 
-func VerifyJWT(tokenStr string) (userID int64, phone string, role string, err error) {
+func VerifyJWT(tokenStr string) (userID int64, role string, err error) {
 	if len(jwtKey) == 0 {
-		return 0, "", "", errors.New("jwt key not initialized")
+		return 0, "", errors.New("jwt key not initialized")
 	}
 
 	token, err := jwt.ParseWithClaims(tokenStr, &CustomClaims{}, func(t *jwt.Token) (any, error) {
@@ -56,17 +54,17 @@ func VerifyJWT(tokenStr string) (userID int64, phone string, role string, err er
 		return jwtKey, nil
 	})
 	if err != nil {
-		return 0, "", "", err
+		return 0, "", err
 	}
 
 	claims, ok := token.Claims.(*CustomClaims)
 	if !ok {
-		return 0, "", "", errors.New("invalid claims type")
+		return 0, "", errors.New("invalid claims type")
 	}
 
-	if claims.UserID == 0 || claims.Phone == "" {
-		return 0, "", "", errors.New("invalid user claims")
+	if claims.UserID == 0 {
+		return 0, "", errors.New("invalid user claims")
 	}
 
-	return claims.UserID, claims.Phone, claims.Role, nil
+	return claims.UserID, claims.Role, nil
 }
