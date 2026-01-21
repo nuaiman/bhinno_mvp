@@ -41,12 +41,23 @@ func Close() {
 
 func createTables(ctx context.Context) {
 	tables := []string{
+		// Locations
+		`CREATE TABLE IF NOT EXISTS locations (
+			country_code VARCHAR(8) PRIMARY KEY,
+			country_name VARCHAR(64) UNIQUE NOT NULL,
+			country_flag VARCHAR(16) UNIQUE,
+			states JSONB,
+			administrative_areas JSONB,
+			sub_administrative_areas JSONB,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		);`,
+
 		// Users
 		`CREATE TABLE IF NOT EXISTS users (
 			id BIGSERIAL PRIMARY KEY,
 			verified BOOLEAN DEFAULT FALSE,
 			role VARCHAR(16) NOT NULL DEFAULT 'client'
-				CHECK (role IN ('client', 'server', 'superadmin')),
+				CHECK (role IN ('superadmin', 'admin', 'client')),
 			status VARCHAR(16) NOT NULL DEFAULT 'review'
 				CHECK (status IN ('active', 'review', 'suspended', 'banned')),
 			name VARCHAR(32),
@@ -92,9 +103,10 @@ func createTables(ctx context.Context) {
 			user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			category_id BIGINT NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
 			subcategory_id BIGINT NOT NULL REFERENCES sub_categories(id) ON DELETE RESTRICT,
-			division_id INT NOT NULL,
-			district_id INT NOT NULL,
-			subdistrict_id INT NOT NULL,
+			country_code VARCHAR(8) NOT NULL REFERENCES locations(country_code),
+			state_id BIGINT NOT NULL,
+			administrative_area_id BIGINT NOT NULL,
+			sub_administrative_area_id BIGINT NOT NULL,
 			area VARCHAR(256) NOT NULL,
 			title VARCHAR(64) NOT NULL,
 			caption VARCHAR(256) NOT NULL,
@@ -157,10 +169,10 @@ func createTables(ctx context.Context) {
 		`CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_subcategory_id ON services(subcategory_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_created_at ON services(created_at);`,
-		`CREATE INDEX IF NOT EXISTS idx_services_category_location_active 
-			ON services(category_id, division_id, district_id, subdistrict_id) 
+		`CREATE INDEX IF NOT EXISTS idx_services_country_location_active 
+			ON services(country_code, state_id, administrative_area_id, sub_administrative_area_id) 
 			WHERE active = TRUE;`,
-		`CREATE INDEX IF NOT EXISTS idx_services_location ON services(division_id, district_id, subdistrict_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_services_location ON services(country_code, state_id, administrative_area_id, sub_administrative_area_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_features ON services USING GIN(features);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_days ON services USING GIN(days);`,
 

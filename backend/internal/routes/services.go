@@ -22,23 +22,24 @@ func createServiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		CategoryID    int64                  `json:"category_id"`
-		SubcategoryID int64                  `json:"subcategory_id"`
-		DivisionID    int                    `json:"division_id"`
-		DistrictID    int                    `json:"district_id"`
-		SubdistrictID int                    `json:"subdistrict_id"`
-		Area          string                 `json:"area"`
-		Title         string                 `json:"title"`
-		Caption       string                 `json:"caption"`
-		Description   string                 `json:"description"`
-		Price         string                 `json:"price"`
-		Features      map[string]interface{} `json:"features"`
-		Hours         string                 `json:"hours"`
-		Days          []string               `json:"days"`
-		PageName      string                 `json:"page_name"`
-		PageLink      string                 `json:"page_link"`
-		MessengerName string                 `json:"messenger_name"`
-		MessengerLink string                 `json:"messenger_link"`
+		CountryCode           string                 `json:"country_code"`
+		CategoryID            int64                  `json:"category_id"`
+		SubcategoryID         int64                  `json:"subcategory_id"`
+		StateID               int                    `json:"state_id"`
+		AdministrativeAreaID  int                    `json:"administrative_area_id"`
+		SubAdministrativeArea int                    `json:"sub_administrative_area_id"`
+		Area                  string                 `json:"area"`
+		Title                 string                 `json:"title"`
+		Caption               string                 `json:"caption"`
+		Description           string                 `json:"description"`
+		Price                 string                 `json:"price"`
+		Features              map[string]interface{} `json:"features"`
+		Hours                 string                 `json:"hours"`
+		Days                  []string               `json:"days"`
+		PageName              string                 `json:"page_name"`
+		PageLink              string                 `json:"page_link"`
+		MessengerName         string                 `json:"messenger_name"`
+		MessengerLink         string                 `json:"messenger_link"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -47,24 +48,25 @@ func createServiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	service := &models.Service{
-		UserID:        userID,
-		CategoryID:    req.CategoryID,
-		SubcategoryID: req.SubcategoryID,
-		DivisionID:    req.DivisionID,
-		DistrictID:    req.DistrictID,
-		SubdistrictID: req.SubdistrictID,
-		Area:          req.Area,
-		Title:         req.Title,
-		Caption:       req.Caption,
-		Description:   req.Description,
-		Price:         req.Price,
-		Features:      req.Features,
-		Hours:         req.Hours,
-		Days:          req.Days,
-		PageName:      req.PageName,
-		PageLink:      req.PageLink,
-		MessengerName: req.MessengerName,
-		MessengerLink: req.MessengerLink,
+		UserID:                  userID,
+		CountryCode:             req.CountryCode,
+		CategoryID:              req.CategoryID,
+		SubcategoryID:           req.SubcategoryID,
+		StateID:                 req.StateID,
+		AdministrativeAreaID:    req.AdministrativeAreaID,
+		SubAdministrativeAreaID: req.SubAdministrativeArea,
+		Area:                    req.Area,
+		Title:                   req.Title,
+		Caption:                 req.Caption,
+		Description:             req.Description,
+		Price:                   req.Price,
+		Features:                req.Features,
+		Hours:                   req.Hours,
+		Days:                    req.Days,
+		PageName:                req.PageName,
+		PageLink:                req.PageLink,
+		MessengerName:           req.MessengerName,
+		MessengerLink:           req.MessengerLink,
 	}
 
 	if err := models.CreateService(ctx, service); err != nil {
@@ -128,23 +130,24 @@ func updateServiceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		CategoryID    *int64                 `json:"category_id"`
-		SubcategoryID *int64                 `json:"subcategory_id"`
-		DivisionID    *int                   `json:"division_id"`
-		DistrictID    *int                   `json:"district_id"`
-		SubdistrictID *int                   `json:"subdistrict_id"`
-		Area          *string                `json:"area"`
-		Title         *string                `json:"title"`
-		Caption       *string                `json:"caption"`
-		Description   *string                `json:"description"`
-		Price         *string                `json:"price"`
-		Features      map[string]interface{} `json:"features"`
-		Hours         *string                `json:"hours"`
-		Days          []string               `json:"days"`
-		PageName      *string                `json:"page_name"`
-		PageLink      *string                `json:"page_link"`
-		MessengerName *string                `json:"messenger_name"`
-		MessengerLink *string                `json:"messenger_link"`
+		CountryCode             *string                `json:"country_code"`
+		CategoryID              *int64                 `json:"category_id"`
+		SubcategoryID           *int64                 `json:"subcategory_id"`
+		StateID                 *int                   `json:"state_id"`
+		AdministrativeAreaID    *int                   `json:"administrative_area_id"`
+		SubAdministrativeAreaID *int                   `json:"sub_administrative_area_id"`
+		Area                    *string                `json:"area"`
+		Title                   *string                `json:"title"`
+		Caption                 *string                `json:"caption"`
+		Description             *string                `json:"description"`
+		Price                   *string                `json:"price"`
+		Features                map[string]interface{} `json:"features"`
+		Hours                   *string                `json:"hours"`
+		Days                    []string               `json:"days"`
+		PageName                *string                `json:"page_name"`
+		PageLink                *string                `json:"page_link"`
+		MessengerName           *string                `json:"messenger_name"`
+		MessengerLink           *string                `json:"messenger_link"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -152,20 +155,23 @@ func updateServiceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.CountryCode != nil {
+		service.CountryCode = *req.CountryCode
+	}
 	if req.CategoryID != nil {
 		service.CategoryID = *req.CategoryID
 	}
 	if req.SubcategoryID != nil {
 		service.SubcategoryID = *req.SubcategoryID
 	}
-	if req.DivisionID != nil {
-		service.DivisionID = *req.DivisionID
+	if req.StateID != nil {
+		service.StateID = *req.StateID
 	}
-	if req.DistrictID != nil {
-		service.DistrictID = *req.DistrictID
+	if req.AdministrativeAreaID != nil {
+		service.AdministrativeAreaID = *req.AdministrativeAreaID
 	}
-	if req.SubdistrictID != nil {
-		service.SubdistrictID = *req.SubdistrictID
+	if req.SubAdministrativeAreaID != nil {
+		service.SubAdministrativeAreaID = *req.SubAdministrativeAreaID
 	}
 	if req.Area != nil {
 		service.Area = *req.Area
@@ -250,43 +256,40 @@ func deleteServiceHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSON(w, http.StatusOK, true, "service deleted successfully", nil)
 }
 
-func filterServicesHandler(w http.ResponseWriter, r *http.Request) {
-	divisionIDStr := r.PathValue("division_id")
-	districtIDStr := r.PathValue("district_id")
-	subdistrictIDStr := r.PathValue("subdistrict_id")
-	categoryIDStr := r.PathValue("category_id")
-	subcategoryIDStr := r.PathValue("subcategory_id")
+func getFilteredServicesHandler(w http.ResponseWriter, r *http.Request) {
+	country := r.PathValue("country_code")
+	stateStr := r.PathValue("state_id")
+	adminStr := r.PathValue("administrative_area_id")
+	subadminStr := r.PathValue("sub_administrative_area_id")
+	categoryStr := r.PathValue("category_id")
+	subcategoryStr := r.PathValue("subcategory_id")
 
-	if divisionIDStr == "" || districtIDStr == "" || subdistrictIDStr == "" || categoryIDStr == "" || subcategoryIDStr == "" {
+	if country == "" || stateStr == "" || adminStr == "" || subadminStr == "" || categoryStr == "" || subcategoryStr == "" {
 		utils.JSON(w, http.StatusBadRequest, false, "all filter parameters are required", nil)
 		return
 	}
 
-	divisionID, err := strconv.Atoi(divisionIDStr)
+	stateID, err := strconv.Atoi(stateStr)
 	if err != nil {
-		utils.JSON(w, http.StatusBadRequest, false, "invalid division_id", nil)
+		utils.JSON(w, http.StatusBadRequest, false, "invalid state_id", nil)
 		return
 	}
-
-	districtID, err := strconv.Atoi(districtIDStr)
+	adminID, err := strconv.Atoi(adminStr)
 	if err != nil {
-		utils.JSON(w, http.StatusBadRequest, false, "invalid district_id", nil)
+		utils.JSON(w, http.StatusBadRequest, false, "invalid administrative_area_id", nil)
 		return
 	}
-
-	subdistrictID, err := strconv.Atoi(subdistrictIDStr)
+	subadminID, err := strconv.Atoi(subadminStr)
 	if err != nil {
-		utils.JSON(w, http.StatusBadRequest, false, "invalid subdistrict_id", nil)
+		utils.JSON(w, http.StatusBadRequest, false, "invalid sub_administrative_area_id", nil)
 		return
 	}
-
-	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
+	categoryID, err := strconv.ParseInt(categoryStr, 10, 64)
 	if err != nil {
 		utils.JSON(w, http.StatusBadRequest, false, "invalid category_id", nil)
 		return
 	}
-
-	subcategoryID, err := strconv.ParseInt(subcategoryIDStr, 10, 64)
+	subcategoryID, err := strconv.ParseInt(subcategoryStr, 10, 64)
 	if err != nil {
 		utils.JSON(w, http.StatusBadRequest, false, "invalid subcategory_id", nil)
 		return
@@ -295,7 +298,7 @@ func filterServicesHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	services, err := models.GetServicesByFilters(ctx, divisionID, districtID, subdistrictID, categoryID, subcategoryID)
+	services, err := models.GetServicesByFilters(ctx, country, stateID, adminID, subadminID, categoryID, subcategoryID)
 	if err != nil {
 		utils.JSON(w, http.StatusInternalServerError, false, "cannot fetch services", nil)
 		return

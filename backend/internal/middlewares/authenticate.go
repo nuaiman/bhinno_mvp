@@ -8,8 +8,11 @@ import (
 )
 
 const (
-	CtxUserID string = "userID"
-	CtxRole   string = "role"
+	CtxUserID         string = "userID"
+	CtxRole           string = "role"
+	CtxRoleSuperAdmin string = "superadmin"
+	CtxRoleAdmin      string = "admin"
+	CtxRoleClient     string = "client"
 )
 
 func Authenticate(next http.HandlerFunc) http.HandlerFunc {
