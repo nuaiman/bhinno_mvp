@@ -19,7 +19,20 @@ func RegisterRoutes() *http.ServeMux {
 	mux.HandleFunc("POST /api/auth/logout", middlewares.Authenticate(logoutHandler))
 	mux.HandleFunc("GET /api/users/{id}", middlewares.Authenticate(getUserByIDHandler))
 
-	// Services CRUD
+	// Locaations
+	mux.HandleFunc("GET /api/countries", countriesHandler)
+	mux.HandleFunc("GET /api/locations/{code}", countryDataHandler)
+
+	// Categories & SubCategories
+	mux.HandleFunc("POST /api/categories", middlewares.Authenticate(createCategoryHandler))
+	mux.HandleFunc("PUT /api/categories/{id}", middlewares.Authenticate(updateCategoryHandler))
+	mux.HandleFunc("DELETE /api/categories/{id}", middlewares.Authenticate(deleteCategoryHandler))
+	mux.HandleFunc("POST /api/subcategories", middlewares.Authenticate(createSubCategoryHandler))
+	mux.HandleFunc("PUT /api/subcategories/{id}", middlewares.Authenticate(updateSubCategoryHandler))
+	mux.HandleFunc("DELETE /api/subcategories/{id}", middlewares.Authenticate(deleteSubCategoryHandler))
+	mux.HandleFunc("GET /api/categories-subcategories", middlewares.Authenticate(getCategoriesAndSubcategoriesHandler))
+
+	// Services
 	mux.HandleFunc("POST /api/services", middlewares.Authenticate(createServiceHandler))
 	mux.HandleFunc("GET /api/services/{id}", getServiceHandler)
 	mux.HandleFunc("PUT /api/services/{id}", middlewares.Authenticate(updateServiceHandler))

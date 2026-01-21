@@ -41,6 +41,7 @@ func Close() {
 
 func createTables(ctx context.Context) {
 	tables := []string{
+		// Users
 		`CREATE TABLE IF NOT EXISTS users (
 			id BIGSERIAL PRIMARY KEY,
 			verified BOOLEAN DEFAULT FALSE,
@@ -67,7 +68,25 @@ func createTables(ctx context.Context) {
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);`,
 
-		`CREATE TABLE services (
+		// Categories
+		`CREATE TABLE IF NOT EXISTS categories (
+			id BIGSERIAL PRIMARY KEY,
+			name VARCHAR(32) NOT NULL,
+			description VARCHAR(128) NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		);`,
+
+		// Sub-categories
+		`CREATE TABLE IF NOT EXISTS sub_categories (
+			id BIGSERIAL PRIMARY KEY,
+			category_id BIGINT NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+			name VARCHAR(64) NOT NULL,
+			description VARCHAR(128) NOT NULL,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		);`,
+
+		// Services
+		`CREATE TABLE IF NOT EXISTS services (
 			id BIGSERIAL PRIMARY KEY,
 			active BOOLEAN NOT NULL DEFAULT TRUE,
 			user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -82,13 +101,37 @@ func createTables(ctx context.Context) {
 			description VARCHAR(1024) NOT NULL,
 			price VARCHAR(32) NOT NULL,
 			features JSONB CHECK (features IS NULL OR (jsonb_typeof(features) = 'object' AND length(features::text) <= 4096)),
-			hours VARCHAR(48) CHECK (hours IS NULL OR hours = 'All day' OR hours ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$'),
+			hours VARCHAR(16) CHECK (hours IS NULL OR hours = 'All day' OR hours ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$'),
 			days TEXT[] NOT NULL CHECK (ARRAY(SELECT unnest(days) EXCEPT SELECT unnest(ARRAY['mon','tue','wed','thu','fri','sat','sun'])) = '{}' AND length(array_to_string(days,',')) <= 32),
 			page_name VARCHAR(32),
 			page_link VARCHAR(256),
 			messenger_name VARCHAR(32),
 			messenger_link VARCHAR(256),
 			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+
+		// Bookings
+		`CREATE TABLE IF NOT EXISTS bookings (
+			id BIGSERIAL PRIMARY KEY,
+			service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+			user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			provider_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			hours VARCHAR(16) CHECK (hours IS NULL OR hours = 'All day' OR hours ~ '^([01]?[0-9]|2[0-3]):[0-5][0-9]-([01]?[0-9]|2[0-3]):[0-5][0-9]$'),
+			days TEXT[] NOT NULL CHECK (ARRAY(SELECT unnest(days) EXCEPT SELECT unnest(ARRAY['mon','tue','wed','thu','fri','sat','sun'])) = '{}' AND length(array_to_string(days,',')) <= 32),
+			status VARCHAR(16) NOT NULL DEFAULT 'pending'
+				CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);`,
+
+		// Ratings
+		`CREATE TABLE IF NOT EXISTS ratings (
+			id BIGSERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			provider_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			service_id BIGINT NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+			rating NUMERIC(3,2) NOT NULL CHECK (rating >= 0 AND rating <= 5),
+			comment VARCHAR(1024),
+			created_at TIMESTAMPTZ DEFAULT NOW()
 		);`,
 	}
 
@@ -100,21 +143,20 @@ func createTables(ctx context.Context) {
 
 	log.Println("All tables ensured")
 
+	// Indexes
 	indexes := []string{
-		// Users indexes
+		// Users
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);`,
 		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);`,
 		`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);`,
 		`CREATE INDEX IF NOT EXISTS idx_users_refresh_token ON users(refresh_token);`,
 
-		// Services indexes
+		// Services
 		`CREATE INDEX IF NOT EXISTS idx_services_user_id ON services(user_id);`,
-		`CREATE INDEX IF NOT EXISTS idx_services_active ON services(active);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_subcategory_id ON services(subcategory_id);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_created_at ON services(created_at);`,
-		`CREATE INDEX IF NOT EXISTS idx_services_rating ON services(rating_avg);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_category_location_active 
 			ON services(category_id, division_id, district_id, subdistrict_id) 
 			WHERE active = TRUE;`,
@@ -122,12 +164,11 @@ func createTables(ctx context.Context) {
 		`CREATE INDEX IF NOT EXISTS idx_services_features ON services USING GIN(features);`,
 		`CREATE INDEX IF NOT EXISTS idx_services_days ON services USING GIN(days);`,
 
-		// Service bookings indexes
-		`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON service_bookings(user_id);`,
-		`CREATE INDEX IF NOT EXISTS idx_bookings_provider_id ON service_bookings(provider_id);`,
-		`CREATE INDEX IF NOT EXISTS idx_bookings_service_id ON service_bookings(service_id);`,
-		`CREATE INDEX IF NOT EXISTS idx_bookings_status ON service_bookings(status);`,
-		`CREATE INDEX IF NOT EXISTS idx_bookings_time ON service_bookings(start_time, end_time);`,
+		// Bookings
+		`CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_bookings_provider_id ON bookings(provider_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_bookings_service_id ON bookings(service_id);`,
+		`CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);`,
 	}
 
 	for _, i := range indexes {
